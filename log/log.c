@@ -69,17 +69,26 @@ int log_crit_e(const char* msg, int err) {
     return log_msg_e(LS_CRIT, msg, err);
 }
 
+int log_err(char* msg) {
+    return log_msg(LS_ERR, msg);
+}
+int log_err_e(char* msg, int err) {
+    return log_msg_e(LS_ERR, msg, err);
+}
+
+int log_warning(char* msg) {
+    return log_msg(LS_WARNING, msg);
+}
+
+int log_warning_e(char* msg, int err) {
+    return log_msg_e(LS_WARNING, msg, err);
+}
+
 int log_info(const char* msg) {
     return log_msg(LS_INFO, msg);
 }
-
-//int log_err(char* msg) {
-//    return log_msg(LS_ERR, msg);
-//}
 //
-//int log_warning(char* msg) {
-//    return log_msg(LS_WARNING, msg);
-//}
+
 //
 //int log_notice(char* msg) {
 //    return log_msg(LS_NOTICE, msg);

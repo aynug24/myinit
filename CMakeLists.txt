@@ -3,7 +3,20 @@ project(untitled C)
 
 set(CMAKE_C_STANDARD 17)
 
-add_executable(myinit main.c list.c list.h daemon.c)
 
-add_executable(fork_example fork_waitpid.c log/log.c log/log.h)
-add_executable(deamon daemon.c log/log.c log/log.h)
+add_executable(sigtest sigtest.c)
+
+add_executable(myinit main.c
+        log/log.c log/log.h
+        parse/parse_myinit_args.c parse/parse_myinit_args.h
+        parse/parse_config.c parse/parse_config.h
+        lists/pid_list.c lists/pid_list.h
+        lists/char_list.c lists/char_list.h task/task.c task/task.h lists/add.c lists/add.h run_daemon/run_daemon.c run_daemon/run_daemon.h)
+
+file(
+    COPY
+    config
+    DESTINATION
+    ${CMAKE_CURRENT_BINARY_DIR}
+    FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_WRITE GROUP_READ GROUP_EXECUTE WORLD_READ
+)

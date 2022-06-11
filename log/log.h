@@ -1,9 +1,5 @@
-//
-// Created by sergei on 10.06.22.
-//
-
-#ifndef UNTITLED_LOG_H
-#define UNTITLED_LOG_H
+#ifndef MYINIT_LOG_H
+#define MYINIT_LOG_H
 
 #include <bits/types/FILE.h>
 
@@ -24,6 +20,13 @@ int close_log();
 
 int log_crit(const char* msg);
 int log_crit_e(const char* msg, int err);
+
+int log_err(char* msg);
+int log_err_e(char* msg, int err);
+
+int log_warning(char* msg);
+int log_warning_e(char* msg, int err);
+
 int log_info(const char* msg);
 
-#endif //UNTITLED_LOG_H
+#endif //MYINIT_LOG_H
