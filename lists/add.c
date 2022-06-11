@@ -86,3 +86,22 @@ int task_add(Task** dest, size_t* count, size_t* capacity, Task task) {
     (*count)++;
     return 0;
 }
+
+int pid_add(pid_t** dest, size_t* count, size_t* capacity, pid_t pid) {
+    if (*count == *capacity) {
+
+        size_t new_capacity = _get_new_capacity(*capacity);
+        pid_t* old_dest = *dest;
+        *dest = realloc(*dest, sizeof(pid_t) * new_capacity);
+        if (*dest == NULL) {
+            log_err_e("Couldn't reallocate buffer memory", errno);
+            free(old_dest);
+            return -1;
+        }
+        *capacity = new_capacity;
+    }
+
+    (*dest)[*count] = pid;
+    (*count)++;
+    return 0;
+}
