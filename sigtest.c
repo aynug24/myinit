@@ -8,7 +8,7 @@
 
 int a = -1;
 
-void reset(int sig) {
+void set_restart(int sig) {
     printf("%d\n", a);
     //fflush(stdout);
 }
@@ -42,7 +42,20 @@ void printf0(const char* format, ... ) {
     va_end( args );
 }
 
+volatile sig_atomic_t seen_signal = 0;
+
+void sig(int sig) {
+    seen_signal = 1;
+}
+
 
 int main(int argc, char* argv[]) {
-    printf0("%d %s", 5, "my_s");
+
+    signal(SIGINT, sig);
+
+    printf("sig is %d\n", seen_signal);
+
+    pause();
+
+    printf0("sig is %d\n", seen_signal);
 }

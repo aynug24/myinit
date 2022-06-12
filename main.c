@@ -29,6 +29,7 @@ void flush_file_bufs() {
     flush_log();
 }
 
+// temporary handler to log some signals on startup
 void log_sig_exit(int sig) {
     log_crit_sig(sig);
     close_log();
@@ -133,5 +134,7 @@ void create_daemon() {
 
 int main(int argc, char* argv[]) {
     create_daemon();
-    return run_daemon(argc, argv);
+    int res = run_daemon(argc, argv);
+    close_log();
+    return res;
 }
