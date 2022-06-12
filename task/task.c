@@ -59,14 +59,12 @@ char* format_task(Task* dest) {
         return NULL;
     }
 
-    bool ok = false;
     for (int arg_i = 0; arg_i < dest->argc; arg_i++) {
         if (_string_append(&res, &res_size, &res_capacity, dest->argv[arg_i]) < 0
             || char_add(&res, &res_size, &res_capacity, ' ') < 0) {
 
             log_crit("Couldn't append arg string");
-            ok = false;
-            goto return_if_ok;
+            return NULL;
         }
     }
 
@@ -75,8 +73,7 @@ char* format_task(Task* dest) {
         || char_add(&res, &res_size, &res_capacity, ' ') < 0) {
 
         log_crit("Couldn't append stdin redirect");
-        ok = false;
-        goto return_if_ok;
+        return NULL;
     }
 
     if (char_add(&res, &res_size, &res_capacity, '>') < 0
@@ -84,12 +81,10 @@ char* format_task(Task* dest) {
              || char_add(&res, &res_size, &res_capacity, ' ') < 0) {
 
         log_crit("Couldn't append stdout redirect");
-        ok = false;
-        goto return_if_ok;
+        return NULL;
     }
 
-    return_if_ok:
-    return ok ? res : NULL;
+    return res;
 }
 
 // -2 if system error, -1 if task stdin/out file error

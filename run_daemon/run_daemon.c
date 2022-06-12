@@ -16,7 +16,7 @@
 char* config_path;
 
 InitTasks tasks;
-pid_t* pids;
+pid_t* pids = NULL;
 
 // set to 1 by handler
 volatile sig_atomic_t should_restart = 0;
@@ -30,7 +30,7 @@ void free_tasks(InitTasks init_tasks) {
 }
 
 void exit_on_sig(int sig) { // log might already be closed (if called after closing it for other reason)
-    log_info_f("Shutting down on signal %d (%s)", sig, strsignal(sig));
+    //log_info_f("Shutting down on signal %d (%s)", sig, strsignal(sig)); NO! PRINTF! IN! SIGS!
 
     // free_tasks(tasks); // might free twice => und behavior; better to not free at all i guess
     // free(pids);
@@ -95,18 +95,28 @@ int log_status(pid_t pid, int status) {
 }
 
 // -1 if err, 0 if no children, 1 if sent to some
-int kill_with_log(int sig) {
-    int res = kill(-1, sig); // NO EINTR
-    if (res < 0 && errno != ESRCH) {
-        log_crit_e("Error sending signal to children", errno);
-        return -1;
-    } else if (res < 0) {
-        log_info_f("No children to send signal (%s) to", strsignal(sig));
+int kill_with_log(int sig) { // tried kill(-1, ...); didn't like it
+    if (pids == NULL) {
         return 0;
-    } else {
-        log_info_f("Sent signal (%s) to some children", strsignal(sig));
-        return 1;
     }
+
+    int sent_sigs_count = 0;
+    for (int pid_i = 0; pid_i < tasks.task_count; ++pid_i) {
+        pid_t pid = pids[pid_i];
+        if (pid == -1) {
+            continue;
+        }
+
+        int res = kill(pid, sig); // NO EINTR
+        if (res < 0) {
+            log_crit_e("Error sending signal to child", errno);
+            return -1;
+        }
+
+        log_info_f("Sent signal (%s) to child with pid=%d", strsignal(sig), pid);
+        sent_sigs_count++;
+    }
+    return (sent_sigs_count > 0) ? 1 : 0;
 }
 
 // -1 if error, 0 if no children, 1 if would block
@@ -425,7 +435,7 @@ int run_daemon(int argc, char* argv[]) {
 
     while (true) { // set_restart signal => next loop iteration
         if (read_config_and_run() < 0) {
-            log_crit("Error while running damon; shutting down");
+            log_crit("Error while running daemon; shutting down");
             break;
         }
         flush_log();

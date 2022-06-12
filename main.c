@@ -29,27 +29,28 @@ void flush_file_bufs() {
     flush_log();
 }
 
+// NO! PRINTF! IN! SIGS!
 // temporary handler to log some signals on startup
-void log_sig_exit(int sig) {
-    log_crit_sig(sig);
-    close_log();
-
-    exit(128 + sig);
-}
-
-void register_critical_sigactions() {
-    struct sigaction sig_action;
-    sig_action.sa_handler = log_sig_exit;
-
-    if (sigaction(SIGSEGV, &sig_action, NULL) < 0) {
-        log_crit_e("Couldn't register critical signal action", errno);
-        exit(-1);
-    }
-    if (sigaction(SIGABRT, &sig_action, NULL) < 0) {
-        log_crit_e("Couldn't register critical signal action", errno);
-        exit(-1);
-    }
-}
+//void log_sig_exit(int sig) {
+//    log_crit_sig(sig);
+//    close_log();
+//
+//    exit(128 + sig);
+//}
+//
+//void register_critical_sigactions() {
+//    struct sigaction sig_action;
+//    sig_action.sa_handler = log_sig_exit;
+//
+//    if (sigaction(SIGSEGV, &sig_action, NULL) < 0) {
+//        log_crit_e("Couldn't register critical signal action", errno);
+//        exit(-1);
+//    }
+//    if (sigaction(SIGABRT, &sig_action, NULL) < 0) {
+//        log_crit_e("Couldn't register critical signal action", errno);
+//        exit(-1);
+//    }
+//}
 
 void fork_daemon() {
     pid_t fork_pid = fork();
@@ -115,7 +116,7 @@ void create_daemon() {
 
     ensure_open_log(); // open log early so that we can see forked messages
 
-    register_critical_sigactions();
+    // register_critical_sigactions();
 
     flush_file_bufs();
 
@@ -127,7 +128,7 @@ void create_daemon() {
 
     close_std_fds(); // closing all fds will close log; also we don't have any other files open
 
-    open_low_fds_to_devnull(); // so that code that uses 0-2 fds doesnt fail or use user fds
+    open_low_fds_to_devnull(); // so that code that uses 0-2 fds doesn't fail or use user fds
 
     ensure_chdir_root();
 }
