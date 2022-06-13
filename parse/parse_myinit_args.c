@@ -15,7 +15,7 @@ char* parse_config_path(int argc, char* argv[]) {
     while ((argname = getopt(argc, argv, "c:")) != -1) {
         switch (argname) {
             case 'c':
-                config_path = malloc(strlen(optarg));
+                config_path = malloc(strlen(optarg) + 1);
                 if (config_path == NULL) {
                     log_crit_e("Couldn't allocate memory for config path", errno);
                     return NULL;

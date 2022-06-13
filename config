@@ -1,4 +1,4 @@
-/bin/sleep 15 /dev/null /dev/null
+/bin/sleep 12 /dev/null /dev/null
 /bin/sleep 15 /dev/null /dev/null
 /bin/sleep 20 /dev/null /dev/null
 /bin/sleep 30 /dev/null /dev/null

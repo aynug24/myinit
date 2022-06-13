@@ -20,7 +20,7 @@ int close_log();
 
 int log_crit(const char* msg);
 int log_crit_e(const char* msg, int err);
-int log_crit_sig(int sig);
+int log_crit_f(const char* msg_f, ...);
 
 int log_err(char* msg);
 int log_err_e(char* msg, int err);

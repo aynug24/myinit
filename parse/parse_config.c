@@ -18,13 +18,13 @@
 
 // *line should be NULL
 // -1 if error, 0 if eof, 1 if ok
-int fgetline(FILE* file, char** line, int* line_length) {
+int fgetline(FILE* file, char** line, size_t* line_length) {
     if (*line != NULL) {
         log_crit("Wrong argument to fgetline, *line isn't NULL");
         return -1;
     }
 
-    int buf_len = INIT_LINE_BUF_SIZE;
+    size_t buf_len = INIT_LINE_BUF_SIZE;
     *line = malloc(buf_len);
     if (*line == NULL) {
         log_crit_e("Couldn't allocate config line buffer", errno);
@@ -35,26 +35,13 @@ int fgetline(FILE* file, char** line, int* line_length) {
     int c;
     while (true) {
         c = fgetc(file);
-        if (c == EOF) {
-            return 0;
-        }
-        if (c == '\n') {
-            return 1;
+        if (c == EOF || c == '\n') {
+
+            char_add(line, line_length, &buf_len, '\0');
+            return (c == EOF) ? 0 : 1;
         }
 
-        if (*line_length == buf_len) {
-            buf_len *= 2;
-            char* old_line = *line;
-            *line = realloc(*line, buf_len);
-            if (*line == NULL) {
-                log_crit_e("Couldn't reallocate line buffer", errno);
-                free(old_line);
-                return -1;
-            }
-        }
-
-        (*line)[*line_length] = (char)c;
-        (*line_length)++;
+        char_add(line, line_length, &buf_len, (char)c);
     }
 }
 
@@ -85,16 +72,12 @@ int _parse_config_line(char* config_line, char*** argv, size_t* argc) {
 // -2 if error, -1 if line format error, 0 if eof, 1 otherwise (ok)
 int _process_config_line(FILE* config, InitTasks* dest, size_t* dest_capacity) {
     char* config_line = NULL;
-    int line_length;
+    size_t line_length;
 
     int read_res = fgetline(config, &config_line, &line_length);
     if (read_res < 0) {
         log_crit("Error reading config line");
         return -2;
-    }
-    if (read_res == 0) {
-        free(config_line);
-        return 0;
     }
 
     char** argv = NULL;
@@ -123,7 +106,13 @@ int _process_config_line(FILE* config, InitTasks* dest, size_t* dest_capacity) {
 
     if (task_add(&dest->tasks, &dest->task_count, dest_capacity, new_task) < 0) {
         log_err("Error adding new task");
+        free(config_line);
         return -2;
+    }
+
+    if (read_res == 0) {
+        free(config_line);
+        return 0;
     }
 
     return 1;
@@ -139,7 +128,7 @@ int parse_config(const char* config_path, InitTasks* dest) {
     size_t tasks_capacity = INIT_TASKS_BUF_SIZE;
     dest->task_count = 0;
     dest->tasks = malloc(sizeof(Task) * tasks_capacity);
-    if (dest->tasks == 0) {
+    if (dest->tasks == NULL) {
         log_crit_e("Couldn't allocate tasks buffer", errno);
         fclose(config);
         return -1;

@@ -121,8 +121,34 @@ int log_crit(const char* msg) {
     return log_msg(LS_CRIT, msg);
 }
 
-int log_crit_sig(int sig) {
-    return log_sig(LS_CRIT, sig);
+// can't forward variadic(((
+int log_crit_f(const char* msg_f, ...) {
+    int res = 0;
+    const char* severity_msg = get_severity_msg(LS_CRIT);
+
+    int print_res = fprintf(log_file, "%s ", severity_msg);
+    if (print_res < 0) {
+        return print_res;
+    }
+    res += print_res;
+
+    va_list args;
+    va_start(args, msg_f);
+    print_res = vfprintf(log_file, msg_f,args);
+    va_end(args);
+
+    if (print_res < 0) {
+        return print_res;
+    }
+    res += print_res;
+
+    print_res = fprintf(log_file, "%c", '\n');
+    if (print_res < 0) {
+        return print_res;
+    }
+    res += print_res;
+
+    return res;
 }
 
 int log_crit_e(const char* msg, int err) {
@@ -181,13 +207,3 @@ int log_info_f(const char* msg_f, ...) {
 
     return res;
 }
-//
-
-//
-//int log_notice(char* msg) {
-//    return log_msg(LS_NOTICE, msg);
-//}
-
-//int log_debug(char* msg) {
-//    return log_msg(LS_DEBUG, msg);
-//}

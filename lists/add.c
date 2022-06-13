@@ -50,7 +50,7 @@ int string_add(char*** dest, size_t* count, size_t* capacity, char* s) {
         *capacity = new_capacity;
     }
 
-    (*dest)[*count] = malloc(sizeof(char) * strlen(s));
+    (*dest)[*count] = malloc(sizeof(char) * (strlen(s) + 1));
     if ((*dest)[*count] == NULL) {
         log_err_e("Couldn't allocate memory for string copy", errno);
         return -1;

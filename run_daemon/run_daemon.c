@@ -29,6 +29,16 @@ void free_tasks(InitTasks init_tasks) {
     free(init_tasks.tasks);
 }
 
+int get_task_idx(pid_t pid, int* task_idx) {
+    for (int i = 0; i < tasks.task_count; ++i) {
+        if (pids[i] == pid) {
+            *task_idx = i;
+            return 0;
+        }
+    }
+    return -1;
+}
+
 void exit_on_sig(int sig) { // log might already be closed (if called after closing it for other reason)
     //log_info_f("Shutting down on signal %d (%s)", sig, strsignal(sig)); NO! PRINTF! IN! SIGS!
 
@@ -90,7 +100,7 @@ int log_status(pid_t pid, int status) {
         return log_info_f("Child process with pid=%d was resumed", pid);
     }
 #endif // WIFCONTINUED
-    log_crit("Unknown process status");
+    log_crit_f("Unknown process status %d", status);
     return -2;
 }
 
@@ -109,7 +119,9 @@ int kill_with_log(int sig) { // tried kill(-1, ...); didn't like it
 
         int res = kill(pid, sig); // NO EINTR
         if (res < 0) {
-            log_crit_e("Error sending signal to child", errno);
+            log_crit_f(
+                    "Error sending signal %d (%s) to child with idx=%d, pid=%d: %s", // need log_crit_fe but can't forward variadic...
+                    sig, strsignal(sig), pid_i, pid, strerror(errno));
             return -1;
         }
 
@@ -140,6 +152,14 @@ int wait_all(bool nonblock) {
             log_crit("Error writing child status while waiting all children");
             return -1;
         }
+
+        int pid_idx;
+        if (get_task_idx(pid, &pid_idx) < 0) {
+            log_crit("Couldn't find process pid");
+            return -1;
+        }
+
+        pids[pid_idx] = -1;
     }
 }
 
@@ -163,7 +183,6 @@ int sleep_no_intr(struct timespec ts) {
     return 0;
 }
 
-// doesn't use tasks.tasks or pids
 int terminate_tasks() {
     int kill_res = kill_with_log(SIGTERM);
     if (kill_res < 0) {
@@ -231,20 +250,24 @@ int start_task(int idx) {
         return -2;
     }
 
-    log_info_f("(Re-)Starting task idx=%d '%s'", idx, task_fmt);
+    log_info_f("Starting task idx=%d '%s'", idx, task_fmt);
 
+    int res;
     int exec_res = exec_task(&tasks.tasks[idx], &pids[idx]);
     if (exec_res == -2) {
-        return -2;
+        res = -2;
     } else if (exec_res == -1) {
         log_info_f("Couldn't start task idx=%d '%s'", idx, task_fmt);
 
         pids[idx] = -1;
-        return -1;
+        res = -1;
     } else {
         log_info_f("Started task idx=%d '%s' with pid=%d", idx, task_fmt, pids[idx]);
-        return 0;
+        res = 0;
     }
+
+    free(task_fmt);
+    return res;
 }
 
 // -1 if err, 0 if should restart, 1 if ok
@@ -253,6 +276,9 @@ int start_tasks() {
     if (pids == NULL) {
         log_crit_e("Couldn't allocate memory for pids", errno);
         return -1;
+    }
+    for (int i = 0; i < tasks.task_count; ++i) {
+        pids[i] = -1;
     }
 
     for (int i = 0; i < tasks.task_count; i++) {
@@ -267,30 +293,10 @@ int start_tasks() {
     return 1;
 }
 
-int get_started_tasks_count() {
-    int res = 0;
-    for (int i = 0; i < tasks.task_count; ++i) {
-        if (pids[i] != -1) {
-            res++;
-        }
-    }
-    return res;
-}
-
-int get_task_by_pid(pid_t pid, int* task_idx) {
-    for (int i = 0; i < tasks.task_count; ++i) {
-        if (pids[i] == pid) {
-            *task_idx = i;
-            return 0;
-        }
-    }
-    return -1;
-}
-
 // same as start_task, -2 if err, -1 if format err, 0 if ok
 int restart_task(pid_t pid) {
     int task_idx;
-    if (get_task_by_pid(pid, &task_idx) < 0) {
+    if (get_task_idx(pid, &task_idx) < 0) {
         log_crit("No task with given pid found to restart");
         return -2;
     }
@@ -357,16 +363,16 @@ int sleep_until_restart() {
 
 int read_config_and_run() {
     flush_log();
-
-    free_tasks(tasks);
-    free(pids);
-
     should_restart = 0;
 
     if (terminate_tasks() < 0) {
         log_crit("Error ensuring all children are dead before (re-?)loading daemon");
         return -1;
     }
+
+    free_tasks(tasks);
+    free(pids);
+    pids = NULL;
 
     if (parse_config(config_path, &tasks) < 0) {
         log_crit("Error parsing config");
@@ -390,11 +396,12 @@ int read_config_and_run() {
     }
     log_info("Started (or tried to start) all tasks");
 
-    if (get_started_tasks_count() == 0) {
-        log_info("Couldn't start any task. Waiting for new config...");
-        flush_log();
-        return sleep_until_restart();
-    }
+//    if (get_started_tasks_count() == 0) {
+//        log_info("Couldn't start any task. Waiting for new config...");
+//        flush_log();
+//        return sleep_until_restart();
+//    }
+    flush_log();
 
     if (should_restart) {
         return 0;

@@ -78,7 +78,7 @@ char* format_task(Task* dest) {
 
     if (char_add(&res, &res_size, &res_capacity, '>') < 0
              || _string_append(&res, &res_size, &res_capacity, dest->stdout_path) < 0
-             || char_add(&res, &res_size, &res_capacity, ' ') < 0) {
+             || char_add(&res, &res_size, &res_capacity, '\0') < 0) {
 
         log_crit("Couldn't append stdout redirect");
         return NULL;

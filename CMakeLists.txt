@@ -10,8 +10,7 @@ add_executable(myinit main.c
         log/log.c log/log.h
         parse/parse_myinit_args.c parse/parse_myinit_args.h
         parse/parse_config.c parse/parse_config.h
-        lists/pid_list.c lists/pid_list.h
-        lists/char_list.c lists/char_list.h task/task.c task/task.h lists/add.c lists/add.h run_daemon/run_daemon.c run_daemon/run_daemon.h)
+        task/task.c task/task.h lists/add.c lists/add.h run_daemon/run_daemon.c run_daemon/run_daemon.h)
 
 file(
     COPY
