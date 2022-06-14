@@ -139,7 +139,9 @@ int parse_config(const char* config_path, InitTasks* dest) {
     dest->tasks = malloc(sizeof(Task) * tasks_capacity);
     if (dest->tasks == NULL) {
         log_crit_e("Couldn't allocate tasks buffer", errno);
-        fclose(config);
+        if (fclose(config) == EOF) {
+            log_crit_e("Error closing config", errno);
+        }
         return -1;
     }
 
@@ -149,7 +151,9 @@ int parse_config(const char* config_path, InitTasks* dest) {
             log_crit("Error while processing config line");
 
             free(dest->tasks);
-            fclose(config);
+            if (fclose(config) == EOF) {
+                log_crit_e("Error closing config", errno);
+            }
             return -1;
         } else if (line_res == -1) {
             log_warning("Line format error");
@@ -160,6 +164,9 @@ int parse_config(const char* config_path, InitTasks* dest) {
         }
     }
 
-    fclose(config);
+    if (fclose(config) == EOF) {
+        log_crit_e("Error closing config", errno);
+        return -1;
+    }
     return 0;
 }

@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdbool.h>
 #include "task.h"
 #include "../log/log.h"
 #include "../lists/add.h"

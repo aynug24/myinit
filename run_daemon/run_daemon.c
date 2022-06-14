@@ -41,16 +41,31 @@ int get_task_idx(pid_t pid, int* task_idx) {
     return -1;
 }
 
-void exit_on_sig(int sig) { // log might already be closed (if called after closing it for other reason)
+// NO! LOGS! (=> printf-s) IN! SIG!
+void set_restart(int sig) {
+    should_restart = 1;
+}
+
+// really not sure if ok & more-of-less safe
+void set_terminal_sig(int sig) {
     terminal_sig = sig;
     should_restart = 1;
-//    close_log();
-//    exit(128 + sig);
+}
+
+int add_restart_handler() {
+    struct sigaction restart_action = EMPTY_SIGACTION;
+    restart_action.sa_handler = set_restart;
+
+    if (sigaction(SIGHUP, &restart_action, NULL) < 0) {
+        log_crit_e("Couldn't register restart action", errno);
+        return -1;
+    }
+    return 0;
 }
 
 int add_sig_exits() {
     struct sigaction exit_action = EMPTY_SIGACTION; // was a fun bug, forgot to init struct, occasional flag SA_RESET was breaking program logic
-    exit_action.sa_handler = exit_on_sig;
+    exit_action.sa_handler = set_terminal_sig;
     sigemptyset(&exit_action.sa_mask);
     sigaddset(&exit_action.sa_mask, SIGHUP);
     sigaddset(&exit_action.sa_mask, SIGINT);
@@ -68,7 +83,7 @@ int add_sig_exits() {
         log_crit_e("Couldn't register SIGSEGV action", errno);
         return -1;
     }
-    if (sigaction(SIGABRT, &exit_action, NULL) < 0) {
+    if (sigaction(SIGABRT, &exit_action, NULL) < 0) { // maybe shouldn't?
         log_crit_e("Couldn't register SIGABRT action", errno);
         return -1;
     }
@@ -162,7 +177,6 @@ int wait_all(bool nonblock) {
     }
 }
 
-
 void free_all() {
     free(config_path);
     free_tasks(tasks);
@@ -222,23 +236,6 @@ int terminate_tasks() {
         return -1;
     }
 
-    return 0;
-}
-
-// NO! LOGS! (=> printf-s) IN! SIG!
-void set_restart(int sig) {
-
-    should_restart = 1;
-}
-
-int add_restart_handler() {
-    struct sigaction restart_action = EMPTY_SIGACTION;
-    restart_action.sa_handler = set_restart;
-
-    if (sigaction(SIGHUP, &restart_action, NULL) < 0) {
-        log_crit_e("Couldn't register restart action", errno);
-        return -1;
-    }
     return 0;
 }
 
@@ -423,13 +420,13 @@ int read_config_and_run() {
 int run_daemon(int argc, char* argv[]) {
     log_info("Running myinit");
 
-    if (add_sig_exits() < 0) {
-        log_crit("Couldn't add exit signal handlers");
+    if (add_restart_handler() < 0) {
+        log_crit("Couldn't add restart handler");
         return -1;
     }
 
-    if (add_restart_handler() < 0) {
-        log_crit("Couldn't add restart handler");
+    if (add_sig_exits() < 0) {
+        log_crit("Couldn't add exit signal handlers");
         return -1;
     }
 

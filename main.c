@@ -1,9 +1,5 @@
 #include <stdio.h>
-#include <syslog.h>
 #include <signal.h>
-#include <sys/types.h>
-#include <sys/param.h>
-#include <sys/resource.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>

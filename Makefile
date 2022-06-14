@@ -12,7 +12,7 @@ myinit: $(ALL_SOURCE_FILES)
 	gcc -$(OPTIMIZATION) $(ALL_SOURCE_FILES) -o myinit
 
 scripts:
-	chmod u+x *.sh
+	chmod -f u+x *.sh || true
 
 clear:
 	rm -f myinit

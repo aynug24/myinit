@@ -4,8 +4,6 @@ project(untitled C)
 set(CMAKE_C_STANDARD 17)
 
 
-add_executable(sigtest sigtest.c)
-
 add_executable(myinit main.c
         log/log.c log/log.h
         parse/parse_myinit_args.c parse/parse_myinit_args.h

@@ -15,13 +15,12 @@ char* parse_config_path(int argc, char* argv[]) {
     while ((argname = getopt(argc, argv, "c:")) != -1) {
         switch (argname) {
             case 'c':
-                config_path = malloc(strlen(optarg) + 1);
+                config_path = strdup(optarg);
                 if (config_path == NULL) {
-                    log_crit_e("Couldn't allocate memory for config path", errno);
+                    log_crit_e("Couldn't copy config path", errno);
                     return NULL;
                 }
 
-                strcpy(config_path, optarg);
                 return config_path;
             case '?':
                 if (optopt == 'c') {
