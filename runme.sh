@@ -14,7 +14,7 @@ killall -q -SIGTERM myinit
 
 # myinit log directory is /tmp/myinit/, it can create it itself though
 # clear dir before testing
-find $INIT_DIR -delete
+test -d $INIT_DIR && find $INIT_DIR -delete
 mkdir -p $INIT_DIR
 
 exec > >(tee -i $RESULT_PATH)  # tee all output to /tmp/myinit/result.txt
