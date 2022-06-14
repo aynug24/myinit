@@ -1,8 +1,8 @@
 
 echo "START"
 
-make clear --silent
-make all --silent
+# make clear --silent
+make all
 
 
 echo "MADE"
@@ -78,4 +78,4 @@ else
   echo "Fail!"
 fi
 
-kill -SIGTERM "$myinit_pid"
+# kill -SIGTERM "$myinit_pid"

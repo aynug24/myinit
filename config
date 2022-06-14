@@ -1,5 +1,3 @@
-/bin/sleep 12 /dev/null /dev/null
-/bin/sleep 15 /dev/null /dev/null
-/bin/sleep 20 /dev/null /dev/null
-/bin/sleep 30 /dev/null /dev/null
-/bin/sleep 10 /dev/null /dev/null
+/usr/bin/ping 127.0.0.1 -c 7 /dev/null /tmp/myinit/second_ping.txt
+
+

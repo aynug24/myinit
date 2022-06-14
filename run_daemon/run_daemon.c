@@ -20,7 +20,9 @@ pid_t* pids = NULL;
 
 // set to 1 by handler
 volatile sig_atomic_t should_restart = 0;
+volatile sig_atomic_t terminal_sig = 0;
 
+static const struct sigaction EMPTY_SIGACTION;
 
 void free_tasks(InitTasks init_tasks) {
     for (int task_i = 0; task_i < init_tasks.task_count; ++task_i) {
@@ -40,13 +42,14 @@ int get_task_idx(pid_t pid, int* task_idx) {
 }
 
 void exit_on_sig(int sig) { // log might already be closed (if called after closing it for other reason)
-    close_log();
-
-    exit(128 + sig);
+    terminal_sig = sig;
+    should_restart = 1;
+//    close_log();
+//    exit(128 + sig);
 }
 
 int add_sig_exits() {
-    struct sigaction exit_action;
+    struct sigaction exit_action = EMPTY_SIGACTION; // was a fun bug, forgot to init struct, occasional flag SA_RESET was breaking program logic
     exit_action.sa_handler = exit_on_sig;
     sigemptyset(&exit_action.sa_mask);
     sigaddset(&exit_action.sa_mask, SIGHUP);
@@ -229,7 +232,7 @@ void set_restart(int sig) {
 }
 
 int add_restart_handler() {
-    struct sigaction restart_action;
+    struct sigaction restart_action = EMPTY_SIGACTION;
     restart_action.sa_handler = set_restart;
 
     if (sigaction(SIGHUP, &restart_action, NULL) < 0) {
@@ -321,7 +324,7 @@ int wait_tasks() {
             log_info("No tasks to wait");
             return 0;
         } else if (pid < 0 && errno == EINTR) {
-
+            log_info("Wait was interrupted");
             continue; // interrupted; try again (prob SIGHUP and will return on next try)
         } else if (pid < 0) {
 
@@ -359,6 +362,13 @@ int sleep_until_restart() {
 
 int read_config_and_run() {
     flush_log();
+    if (should_restart && terminal_sig == 0) {
+        log_info("Received restart signal");
+    } else if (terminal_sig > 0) { // might be reeally not safe
+        log_crit_f("Received terminal signal %d (%s). Shutting down...", (int)terminal_sig, strsignal((int)terminal_sig));
+        close_log();
+        exit(128 + (int)terminal_sig);
+    }
     should_restart = 0;
 
     if (terminate_tasks() < 0) {

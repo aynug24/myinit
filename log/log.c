@@ -9,6 +9,7 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <time.h>
 #include "log.h"
 
 const char* LOG_PATH = "/tmp/myinit/myinit.log";
@@ -84,12 +85,12 @@ const char* get_severity_msg(enum LogSeverity ls) {
 
 int log_msg(enum LogSeverity ls, const char* msg) {
     const char* severity_msg = get_severity_msg(ls);
-    return fprintf(log_file, "%s %s\n", severity_msg, msg);
+    return fprintf(log_file, "%ld %s %s\n", time(NULL), severity_msg, msg);
 }
 
 int log_msg_e(enum LogSeverity ls, const char* msg, int err) {
     const char* severity_msg = get_severity_msg(ls);
-    return fprintf(log_file, "%s %s: %s\n", severity_msg, msg, strerror(err));
+    return fprintf(log_file, "%ld %s %s: %s\n", time(NULL), severity_msg, msg, strerror(err));
 }
 
 int log_msg_f1e(enum LogSeverity ls, const char* msg_f, char* s, int err) {
@@ -104,7 +105,7 @@ int log_msg_f1e(enum LogSeverity ls, const char* msg_f, char* s, int err) {
 
     sprintf(fmted, msg_f, s);
 
-    int print_res = fprintf(log_file, "%s %s: %s\n", severity_msg, fmted, strerror(err));
+    int print_res = fprintf(log_file, "%ld %s %s: %s\n", time(NULL), severity_msg, fmted, strerror(err));
     free(fmted);
     return print_res;
 }
@@ -113,7 +114,7 @@ int log_msg_f(enum LogSeverity ls, const char* msg_f, ...) {
     int res = 0;
     const char* severity_msg = get_severity_msg(ls);
 
-    int print_res = fprintf(log_file, "%s ", severity_msg);
+    int print_res = fprintf(log_file, "%ld %s ", time(NULL), severity_msg);
     if (print_res < 0) {
         return print_res;
     }
@@ -147,7 +148,7 @@ int log_crit_f(const char* msg_f, ...) {
     int res = 0;
     const char* severity_msg = get_severity_msg(LS_CRIT);
 
-    int print_res = fprintf(log_file, "%s ", severity_msg);
+    int print_res = fprintf(log_file, "%ld %s ", time(NULL), severity_msg);
     if (print_res < 0) {
         return print_res;
     }
@@ -204,7 +205,7 @@ int log_info_f(const char* msg_f, ...) {
     int res = 0;
     const char* severity_msg = get_severity_msg(LS_INFO);
 
-    int print_res = fprintf(log_file, "%s ", severity_msg);
+    int print_res = fprintf(log_file, "%ld %s ", time(NULL), severity_msg);
     if (print_res < 0) {
         return print_res;
     }
