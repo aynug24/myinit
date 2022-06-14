@@ -7,9 +7,11 @@
 #include <malloc.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "log.h"
 
-const char* LOG_PATH = "/tmp/myinit.log";
+const char* LOG_PATH = "/tmp/myinit/myinit.log";
 
 const char* CRIT_MSG = "CRIT";
 const char* ERR_MSG = "ERR";
@@ -20,11 +22,37 @@ const char* DEBUG_MSG = "DEBUG";
 
 const char* UNK_MSG = "UNK";
 
-FILE* log_file;
+FILE* log_file = NULL;
+
+
+int _mkdirs(const char* path) {
+    char tmp[256];
+    snprintf(tmp, sizeof(tmp), "%s", path);
+
+    size_t len = strlen(tmp);
+    if (tmp[len - 1] == '/') {
+        tmp[len - 1] = 0;
+    }
+    for (char* p = tmp + 1; *p != '\0'; p++) {
+        if (*p != '/') {
+            continue;
+        }
+
+        *p = 0;
+        if (mkdir(tmp, S_IRWXU) < 0 && errno != EEXIST) {
+            return -1;
+        }
+        *p = '/';
+    }
+    return 0;
+}
 
 FILE* open_log() {
+    if (_mkdirs(LOG_PATH) < 0) {
+        return NULL;
+    }
     log_file = fopen(LOG_PATH, "w"); // w is better for debug
-    return log_file; // should add recursive directory creation
+    return log_file;
 }
 
 int flush_log() {
@@ -57,13 +85,6 @@ const char* get_severity_msg(enum LogSeverity ls) {
 int log_msg(enum LogSeverity ls, const char* msg) {
     const char* severity_msg = get_severity_msg(ls);
     return fprintf(log_file, "%s %s\n", severity_msg, msg);
-}
-
-int log_sig(enum LogSeverity ls, int sig) {
-    const char* severity_msg = get_severity_msg(ls);
-    const char* signame = strsignal(sig);
-
-    return fprintf(log_file, "%s Received signal %s (%d)\n", severity_msg, signame, sig);
 }
 
 int log_msg_e(enum LogSeverity ls, const char* msg, int err) {

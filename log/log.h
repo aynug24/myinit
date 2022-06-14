@@ -12,8 +12,6 @@ enum LogSeverity {
     LS_DEBUG
 };
 
-extern const char* LOG_PATH;
-
 FILE* open_log();
 int flush_log();
 int close_log();

@@ -18,7 +18,7 @@
 
 // *line should be NULL
 // -1 if error, 0 if eof, 1 if ok
-int fgetline(FILE* file, char** line, size_t* line_length) {
+int fgetline(FILE* file, char** line) {
     if (*line != NULL) {
         log_crit("Wrong argument to fgetline, *line isn't NULL");
         return -1;
@@ -31,24 +31,30 @@ int fgetline(FILE* file, char** line, size_t* line_length) {
         return -1;
     }
 
-    *line_length = 0;
-    int c;
+    size_t line_length = 0; // with '\0'
+    int c, res;
     while (true) {
         c = fgetc(file);
         if (c == EOF || c == '\n') {
 
-            char_add(line, line_length, &buf_len, '\0');
-            return (c == EOF) ? 0 : 1;
+            char_add(line, &line_length, &buf_len, '\0');
+            res = (c == EOF) ? 0 : 1;
+            break;
         }
 
-        char_add(line, line_length, &buf_len, (char)c);
+        char_add(line, &line_length, &buf_len, (char)c);
     }
+    if (ferror(file)) {
+        log_crit_e("Error reading from file", errno);
+        return -1;
+    }
+    return res;
 }
 
 // my f god...
 int _parse_config_line(char* config_line, char*** argv, size_t* argc) {
     size_t argv_capacity = INIT_ARGS_BUF_SIZE;
-    *argv = malloc(argv_capacity);
+    *argv = malloc(sizeof(char*) * argv_capacity); // there was a fun bug (forgot the sizeof part); program failed on fclose!
     if (*argv == NULL) {
         log_crit_e("Couldn't allocate args buffer", errno);
         return -1;
@@ -72,13 +78,14 @@ int _parse_config_line(char* config_line, char*** argv, size_t* argc) {
 // -2 if error, -1 if line format error, 0 if eof, 1 otherwise (ok)
 int _process_config_line(FILE* config, InitTasks* dest, size_t* dest_capacity) {
     char* config_line = NULL;
-    size_t line_length;
 
-    int read_res = fgetline(config, &config_line, &line_length);
+    int read_res = fgetline(config, &config_line);
     if (read_res < 0) {
         log_crit("Error reading config line");
         return -2;
     }
+
+    log_info_f("Have read config line '%s'", config_line);
 
     char** argv = NULL;
     size_t argc;
@@ -92,7 +99,7 @@ int _process_config_line(FILE* config, InitTasks* dest, size_t* dest_capacity) {
     if (argc == 0) { // empty line, may be last line in file
         free_strings(argv, argc);
         free(config_line);
-        return -1;
+        return (read_res == 0) ? 0 : -1;
     }
 
     Task new_task;
@@ -109,6 +116,8 @@ int _process_config_line(FILE* config, InitTasks* dest, size_t* dest_capacity) {
         free(config_line);
         return -2;
     }
+
+    log_info("Successfully parsed config line");
 
     if (read_res == 0) {
         free(config_line);

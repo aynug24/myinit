@@ -29,29 +29,6 @@ void flush_file_bufs() {
     flush_log();
 }
 
-// NO! PRINTF! IN! SIGS!
-// temporary handler to log some signals on startup
-//void log_sig_exit(int sig) {
-//    log_crit_sig(sig);
-//    close_log();
-//
-//    exit(128 + sig);
-//}
-//
-//void register_critical_sigactions() {
-//    struct sigaction sig_action;
-//    sig_action.sa_handler = log_sig_exit;
-//
-//    if (sigaction(SIGSEGV, &sig_action, NULL) < 0) {
-//        log_crit_e("Couldn't register critical signal action", errno);
-//        exit(-1);
-//    }
-//    if (sigaction(SIGABRT, &sig_action, NULL) < 0) {
-//        log_crit_e("Couldn't register critical signal action", errno);
-//        exit(-1);
-//    }
-//}
-
 void fork_daemon() {
     pid_t fork_pid = fork();
     if (fork_pid < 0) {
@@ -62,6 +39,7 @@ void fork_daemon() {
         exit(-1);
     }
     if (fork_pid > 0) {
+        printf("%d", fork_pid);
         exit(0);
     }
 }
@@ -115,8 +93,6 @@ void create_daemon() {
     ignore_terminal_sigs();
 
     ensure_open_log(); // open log early so that we can see forked messages
-
-    // register_critical_sigactions();
 
     flush_file_bufs();
 

@@ -40,10 +40,6 @@ int get_task_idx(pid_t pid, int* task_idx) {
 }
 
 void exit_on_sig(int sig) { // log might already be closed (if called after closing it for other reason)
-    //log_info_f("Shutting down on signal %d (%s)", sig, strsignal(sig)); NO! PRINTF! IN! SIGS!
-
-    // free_tasks(tasks); // might free twice => und behavior; better to not free at all i guess
-    // free(pids);
     close_log();
 
     exit(128 + sig);
@@ -395,12 +391,6 @@ int read_config_and_run() {
         return -1;
     }
     log_info("Started (or tried to start) all tasks");
-
-//    if (get_started_tasks_count() == 0) {
-//        log_info("Couldn't start any task. Waiting for new config...");
-//        flush_log();
-//        return sleep_until_restart();
-//    }
     flush_log();
 
     if (should_restart) {
